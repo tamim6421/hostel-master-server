@@ -3,7 +3,7 @@ const app = express()
 require('dotenv').config()
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
-const { MongoClient, ServerApiVersion } = require('mongodb')
+const { MongoClient, ServerApiVersion, Collection } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
 const port = process.env.PORT || 5000
@@ -55,6 +55,16 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+
+    // database Collection 
+    const usersCollection = client.db('hostelMaster').collection('users')
+    const roomsCollection = client.db('hostelMaster').collection('rooms') 
+    const bookingCollection = client.db('hostelMaster').collection('booking') 
+
+
+
+
+
     // auth related api
     app.post('/jwt', async (req, res) => {
       const user = req.body
@@ -87,7 +97,10 @@ async function run() {
       }
     })
 
-    // Save or modify user email, status in DB
+
+
+
+    // Save or modify user email, when user login to the database 
     app.put('/users/:email', async (req, res) => {
       const email = req.params.email
       const user = req.body
@@ -95,6 +108,8 @@ async function run() {
       const options = { upsert: true }
       const isExist = await usersCollection.findOne(query)
       console.log('User found?----->', isExist)
+
+
       if (isExist) return res.send(isExist)
       const result = await usersCollection.updateOne(
         query,
@@ -105,6 +120,8 @@ async function run() {
       )
       res.send(result)
     })
+
+
 
     // Send a ping to confirm a successful connection
     // await client.db('admin').command({ ping: 1 })
