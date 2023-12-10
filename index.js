@@ -81,7 +81,7 @@ async function run() {
         .send({ success: true })
     })
 
-    // Logout
+    // Logout user and remove the token 
     app.get('/logout', async (req, res) => {
       try {
         res
