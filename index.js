@@ -149,6 +149,28 @@ app.get('/rooms/:id', async(req, res) =>{
   }
 })
 
+
+
+
+// post roomData in database
+app.post('/roomsdata', async (req, res) =>{
+  try {
+    const rooms = req.body
+    const result = await roomsCollection.insertOne(rooms)
+    res.send(result)
+
+  } catch (error) {
+    console.log(error)
+  }
+})
+
+
+
+
+
+
+
+
     // Send a ping to confirm a successful connection
     // await client.db('admin').command({ ping: 1 })
     console.log(
