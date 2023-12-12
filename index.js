@@ -122,6 +122,18 @@ async function run() {
     })
 
 
+     // get user roll 
+     app.get('/user/:email', async(req, res) =>{
+      try {
+        const email = req.params.email
+        const result = await usersCollection.findOne({email})
+        res.send(result)
+      } catch (error) {
+        console.log(error)
+      }
+    })
+
+
 
 
 // get rooms 
@@ -150,6 +162,16 @@ app.get('/rooms/:id', async(req, res) =>{
 })
 
 
+// get rooms by host / get my rooms 
+app.get('/myrooms/:email', async(req, res) =>{
+  try {
+    const email = req.params.email 
+    const result = await roomsCollection.find({ 'host.email' : email}).toArray()
+    res.send(result)
+  } catch (error) {
+    console.log(error)
+  }
+})
 
 
 // post roomData in database
