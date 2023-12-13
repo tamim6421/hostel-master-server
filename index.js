@@ -101,16 +101,29 @@ async function run() {
 
 
     // Save or modify user email, when user login to the database 
+    // Save or modify user email, status in DB
     app.put('/users/:email', async (req, res) => {
       const email = req.params.email
       const user = req.body
       const query = { email: email }
       const options = { upsert: true }
       const isExist = await usersCollection.findOne(query)
-      console.log('User found?----->', isExist)
-
-
-      if (isExist) return res.send(isExist)
+    
+      if (isExist){
+        if(user?.status === "Requested"){
+          const result = await usersCollection.updateOne(
+            query,
+            {
+              $set: user,
+            },
+            options
+          )
+          return res.send(result)
+        }
+        else{
+          return res.send(isExist)
+        }
+      }
       const result = await usersCollection.updateOne(
         query,
         {
@@ -120,6 +133,7 @@ async function run() {
       )
       res.send(result)
     })
+
 
 
      // get user roll 
@@ -231,6 +245,78 @@ app.post('/create-payment-intent', verifyToken, async(req, res) =>{
         res.send(result)
       })
   
+
+    // get all bookings for guest 
+    app.get('/bookings', verifyToken, async(req, res) =>{
+      const email = req.query.email 
+      if(!email) return res.send([])
+
+      const query = {'guest.email' : email}
+      const result = await bookingCollection.find(query).toArray()
+      res.send(result)
+    })
+
+
+    // get all bookings for host by email query 
+    app.get('/bookings/host', verifyToken, async(req, res) =>{
+      const email = req.query.email 
+      if(!email) return res.send([])
+
+      const query = {'host' : email}
+      const result = await bookingCollection.find(query).toArray()
+      res.send(result)
+    })
+
+      // get all users data for manage users in admin route 
+      app.get('/allusers/admin', verifyToken, async( req, res) =>{
+      
+        const result = await usersCollection.find().toArray()
+        res.send(result)
+        
+      })
+  
+  
+      // update user role 
+      app.put('/update/role/:email', async(req, res) =>{
+        const email = req.params.email
+        const user = req.body 
+        const query = {email : email}
+        const options = { upsert: true}
+        const updateDoc = {
+          $set:{
+            ...user, timestamp: Date.now()
+          }
+        }
+        const result = await usersCollection.updateOne(query, updateDoc, options)
+        res.send(result)
+      })
+  
+ // Admin Stat Data for admin state
+ app.get('/admin-stat', verifyToken,  async (req, res) => {
+  const bookingsDetails = await bookingsCollection
+    .find({}, { projection: { date: 1, price: 1 } })
+    .toArray()
+  const userCount = await usersCollection.countDocuments()
+  const roomCount = await roomsCollection.countDocuments()
+  const totalSale = bookingsDetails.reduce(
+    (sum, data) => sum + data.price,
+    0
+  )
+
+  const chartData = bookingsDetails.map(data => {
+    const day = new Date(data.date).getDate()
+    const month = new Date(data.date).getMonth() + 1
+    return [day + '/' + month, data.price]
+  })
+  chartData.unshift(['Day', 'Sale'])
+  res.send({
+    totalSale,
+    bookingCount: bookingsDetails.length,
+    userCount,
+    roomCount,
+    chartData,
+  })
+})
 
 
 
