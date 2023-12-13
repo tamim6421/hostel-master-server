@@ -7,7 +7,7 @@ const { MongoClient, ServerApiVersion, Collection, ObjectId } = require('mongodb
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
 const port = process.env.PORT || 5000
-
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 
 // middleware
 const corsOptions = {
@@ -59,7 +59,7 @@ async function run() {
     // database Collection 
     const usersCollection = client.db('hostelMaster').collection('users')
     const roomsCollection = client.db('hostelMaster').collection('rooms') 
-    const bookingCollection = client.db('hostelMaster').collection('booking') 
+    const bookingCollection = client.db('hostelMaster').collection('bookings') 
 
 
 
@@ -189,6 +189,48 @@ app.post('/roomsdata', async (req, res) =>{
 
 
 
+// booking related api 
+app.post('/create-payment-intent', verifyToken, async(req, res) =>{
+  const {price} = req.body 
+  const amount = parseInt( price * 100)
+  
+  if(!price || amount < 1) return
+
+  const {client_secret} = await stripe.paymentIntents.create({
+    amount: amount,
+    currency: 'usd',
+    payment_method_types: ['card']
+  })
+  res.send({clientSecret: client_secret})
+
+})
+
+
+   // save booking info in booking collection 
+   app.post('/booking', async (req, res) =>{
+    const booking = req.body 
+    const result = await bookingCollection.insertOne(booking)
+
+    // send email 
+
+    res.send(result)
+  })
+
+
+      // update room booking status 
+      app.patch('/rooms/status/:id', async(req, res) =>{
+        const id = req.params.id 
+        const status = req.body.status
+        const query = { _id: new ObjectId(id)}
+        const updateDoc = {
+          $set:{
+            booked: status
+          }
+        }
+        const result = await roomsCollection.updateOne(query, updateDoc)
+        res.send(result)
+      })
+  
 
 
 
