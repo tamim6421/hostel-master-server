@@ -11,7 +11,7 @@ const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 
 // middleware
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'https://bid-hotels.web.app','https://bid-hotels.firebaseapp.com' ],
   credentials: true,
   optionSuccessStatus: 200,
 }
@@ -200,6 +200,46 @@ app.post('/roomsdata', async (req, res) =>{
   }
 })
 
+// get one room 
+app.get('/updateroom/:id', async(req, res) =>{
+  const id = req.params.id
+  const query = {_id: new ObjectId(id)}
+  const result = await roomsCollection.findOne(query)
+  res.send(result)
+
+})
+
+// update rooms 
+app.patch('/rooms/:id', async(req, res) =>{
+  const item = req.body 
+  const  id = req.params.id 
+  const filter = {_id: new ObjectId(id)}
+  const updateDoc = {
+   $set:{
+    area:item.area,
+    bathrooms: item.bathrooms,
+    bedrooms:item.bedrooms,
+    description:item.description,
+    from:item.from,
+    image:item.image,
+    location:item.location,
+    price:item.price,
+    title:item.title,
+    to:item.to,
+   }
+  }
+const result = await roomsCollection.updateOne(filter, updateDoc)
+res.send(result)
+})
+
+// delete room 
+app.delete('/rooms/:id', async(req, res) =>{
+  const id = req.params.id 
+  const query = {_id: new ObjectId(id)}
+  const result = await roomsCollection.deleteOne(query)
+  res.send(result)
+
+})
 
 
 
@@ -292,9 +332,8 @@ app.post('/create-payment-intent', verifyToken, async(req, res) =>{
       })
   
  // Admin Stat Data for admin state
- app.get('/admin-stat', verifyToken,  async (req, res) => {
-  const bookingsDetails = await bookingsCollection
-    .find({}, { projection: { date: 1, price: 1 } })
+ app.get('/admin-stat',  async (req, res) => {
+  const bookingsDetails = await bookingCollection.find({}, { projection: { date: 1, price: 1 } })
     .toArray()
   const userCount = await usersCollection.countDocuments()
   const roomCount = await roomsCollection.countDocuments()
