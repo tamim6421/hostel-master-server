@@ -60,6 +60,7 @@ async function run() {
     const usersCollection = client.db('hostelMaster').collection('users')
     const roomsCollection = client.db('hostelMaster').collection('rooms') 
     const bookingCollection = client.db('hostelMaster').collection('bookings') 
+    const confirmRoomCollection = client.db('hostelMaster').collection('confirmRooms') 
 
 
 
@@ -162,6 +163,23 @@ app.get('/rooms', async(req, res) =>{
   }
 })
 
+// get all rooms
+app.get('/allrooms', async(req, res) =>{
+  try {
+    const filter = req.query
+    const query = {
+      area: { $regex: filter.search, $options: 'i'}
+    }
+    console.log(query)
+    const result = await roomsCollection.find(query).toArray()
+    res.send(result)
+    
+  } catch (error) {
+    console.log(error)
+  }
+})
+
+
 // get a single by id 
 app.get('/rooms/:id', async(req, res) =>{
   try {
@@ -242,6 +260,40 @@ app.delete('/rooms/:id', async(req, res) =>{
 })
 
 
+
+// confirm room data api 
+
+
+// post room 
+app.post('/confirmroom', async (req, res) => {
+  try {
+    const rooms = req.body;
+
+    // Generate a new ObjectId
+    const newObjectId = new ObjectId();
+
+    // Set _id to the new ObjectId
+    rooms._id = newObjectId;
+
+    // Use updateOne to upsert (update or insert) the document based on the custom _id
+    const result = await confirmRoomCollection.updateOne(
+      { _id: newObjectId }, // Search criteria based on the new ObjectId
+      { $set: rooms },      // Set the fields of the document
+      { upsert: true }       // Create a new document if it doesn't exist
+    );
+
+    // Convert the _id to ObjectId before using it in the deletion query
+    const query = { _id:new ObjectId(rooms._id) };
+    console.log(query);
+
+    const deleteResult = await roomsCollection.deleteOne(query);
+
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: 'Internal Server Error' });
+  }
+});
 
 // booking related api 
 app.post('/create-payment-intent', verifyToken, async(req, res) =>{
